@@ -7,6 +7,6 @@ web:
   environment:
     - ROOT_URL=http://192.168.99.100
     - NODE_ENV=development
-    - SLACK_TOKEN=
+    - SLACK_TOKEN=xoxb-44729758022-4kbOSUVjVTemCWKmxDmiRhxw
     - ZORK_ENDPOINT=http://www.ifiction.org/games/playz.php?cat=1&game=386&mode=html
   command: "/bin/bash /usr/src/app/docker/start-local.sh"

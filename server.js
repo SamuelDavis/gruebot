@@ -1,32 +1,27 @@
 'use strict';
 
-const Game = require('./game');
-const controller = require('botkit').slackbot();
+const {buildSlackController, reply, spawnSlackBot} = require('./slack');
+const {bootGame, bindOnOutput, write, loadGame, saveGame} = require('./frotz');
+const {FROTZ} = {
+  FROTZ: {
+    APP: `${__dirname}/lib/dfrotz`,
+    GAMES: {
+      ZORK1: `${__dirname}/lib/games/ZORK1.DAT`
+    }
+  }
+};
 
-controller
-  .hears('.*', ['direct_message'], (bot, message) => {
-    (new Game(message.user))
-      .load()
-      .then(game => {
-        return game.process(message.text)
-          .then(response => {
-            game.save();
-            return response;
-          });
-      })
-      .then(response => reply(bot, message, response))
-      .catch(console.error);
-  });
+const controller = buildSlackController();
+controller.hears('.*', ['direct_message'], (bot, message) => {
+  bootGame(FROTZ.APP, FROTZ.GAMES.ZORK1)
+    .then(frotz => loadGame(frotz, message.user))
+    .then(frotz => bindOnOutput(frotz, text => text ? reply(bot, message, text) : frotz))
+    .then(frotz => write(frotz, message.text))
+    .then(frotz => saveGame(frotz, message.user))
+    .catch(err => {
+      console.error({err});
+      reply(bot, message, err.message)
+    });
+});
 
-controller
-  .spawn({
-    token: process.env.SLACK_TOKEN
-  })
-  .startRTM(err => err ? console.error(`Failed to connect to Slack: ${err}.`) : console.log(`Connected to Slack.`));
-
-function reply(bot, message, text) {
-  return new Promise((resolve, reject) => {
-    bot.replyWithTyping(message, text, err => err ? reject(err) : resolve())
-  });
-}
-
+spawnSlackBot(controller).catch(console.error);
