@@ -1,17 +1,18 @@
 'use strict';
 
 const _ = require('lodash/fp');
-const {stat} = require('fs');
+const {statSync} = require('fs');
 const {execFile} = require('child_process');
 const iconv = require('iconv');
-const INTRO = 'Revision 88 / Serial number 840726';
 
 module.exports = {
   bootGame,
   bindOnOutput,
-  write,
+  input,
   saveGame,
-  loadGame
+  loadGame,
+  buildSaveFile,
+  userHasSave
 };
 
 function bootGame(app, game) {
@@ -36,7 +37,7 @@ function bindOnOutput(frotz, cb) {
   return frotz;
 }
 
-function write(frotz, cmd) {
+function input(frotz, cmd) {
   return new Promise(resolve => {
     frotz.stdin.write(`${cmd}\n`);
     setTimeout(resolve.bind(this, frotz), 1000);
@@ -45,33 +46,32 @@ function write(frotz, cmd) {
 
 function saveGame(frotz, user) {
   const saveFile = buildSaveFile(user);
-  write(frotz, 'save');
-  return new Promise(resolve => {
-    stat(saveFile, err => {
-      if (!err) {
-        write(frotz, saveFile);
-        resolve(write(frotz, 'yes'));
-      } else {
-        resolve(write(frotz, saveFile));
-      }
-    })
-  });
+  input(frotz, 'save');
+  if (!userHasSave(user)) {
+    input(frotz, saveFile);
+    return input(frotz, 'yes');
+  }
+  return input(frotz, saveFile);
 }
 
 function loadGame(frotz, user) {
   const saveFile = buildSaveFile(user);
-  return new Promise(resolve => {
-    stat(saveFile, err => {
-      if (!err) {
-        write(frotz, 'restore');
-        resolve(write(frotz, saveFile));
-      } else {
-        resolve(frotz);
-      }
-    })
-  });
+  if (!userHasSave(user)) {
+    return frotz;
+  }
+  input(frotz, 'restore');
+  return input(frotz, saveFile);
 }
 
 function buildSaveFile(user) {
   return `${__dirname}/saves/${user}.save`;
+}
+
+function userHasSave(user) {
+  try {
+    statSync(buildSaveFile(user));
+    return true;
+  } catch (ex) {
+    return false;
+  }
 }
