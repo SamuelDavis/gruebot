@@ -6,7 +6,7 @@ const {bootGame, bindOnOutput, input, loadGame, saveGame, buildSaveFile, userHas
 const {stat, writeFile} = require('fs');
 const {FROTZ, GREETING, REBUFF} = {
   GREETING: 'Shh. I\'m secret; don\'t tell anyone. Why don\'t you try `look`ing around?',
-  REBUFF: '_Soft, low growl._',
+  REBUFF: 'http://orig05.deviantart.net/b523/f/2012/050/0/5/you_are_likely_to_be_eaten_by_a_grue_by_nmajmani-d4qbkrg.png',
   FROTZ: {
     APP: `${__dirname}/lib/dfrotz`,
     GAMES: {
