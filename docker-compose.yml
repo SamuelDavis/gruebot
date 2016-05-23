@@ -6,4 +6,5 @@ web:
     - ".:/usr/src/app"
   environment:
     - SLACK_TOKEN=
+    - BOTLYTICS_TOKEN=
   command: "/bin/bash /usr/src/app/docker/start-local.sh"

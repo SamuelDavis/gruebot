@@ -1,6 +1,7 @@
 'use strict';
 
 const _ = require('lodash/fp');
+const {logIncoming, logOutgoing} = require('./botlyticsGateway');
 const {buildSlackController, reply, spawnSlackBot} = require('./slack');
 const {bootGame, bindOnOutput, input, loadGame, saveGame, buildSaveFile, userHasSave} = require('./frotz');
 const {stat, writeFile} = require('fs');
@@ -18,17 +19,26 @@ const controller = buildSlackController();
 
 controller.hears('.*', ['direct_message'], (bot, message) => {
   const {text, user} = message;
-  if (!userHasSave(user)) {
-    sayWithTyping(bot, message, REBUFF);
-  } else {
-    bootGame(FROTZ.APP, FROTZ.GAMES.ZORK1)
-      .then(frotz => loadGame(frotz, user))
-      .then(frotz => bindOnOutput(frotz, text => text ? reply(bot, message, text) : frotz))
-      .then(frotz => input(frotz, text))
-      .then(frotz => saveGame(frotz, user))
-      .catch(err => reply(bot, message, err.message));
-  }
+  logIncoming(user, text)
+    .then(() => {
+      if (!userHasSave(user)) {
+        throw new Error(REBUFF);
+      }
+    })
+    .then(() => bootGame(FROTZ.APP, FROTZ.GAMES.ZORK1))
+    .then(frotz => loadGame(frotz, user))
+    .then(frotz => bindOnOutput(frotz, text => {
+      return !text ? frotz : respond(bot, message, text).then(() => frotz);
+    }))
+    .then(frotz => input(frotz, text))
+    .then(frotz => saveGame(frotz, user))
+    .catch(err => respond(bot, message, err.message));
 });
+
+function respond(bot, message, text) {
+  return logOutgoing(message.user, text)
+    .then(() => reply(bot, message, text));
+}
 
 controller.hears('.*', ['ambient'], (bot, message) => {
   const {user} = message;
