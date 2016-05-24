@@ -7,4 +7,5 @@ web:
   environment:
     - SLACK_TOKEN=
     - BOTLYTICS_TOKEN=
+    - BOTLYTICS_URL=http://www.botlytics.co/api/v1/messages
   command: "/bin/bash /usr/src/app/docker/start-local.sh"

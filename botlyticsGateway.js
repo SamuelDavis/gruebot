@@ -1,32 +1,22 @@
 'use strict';
 
-const http = require('http');
+const request = require('request-promise');
 const _ = require('lodash/fp');
+const writeEndpoint = `${process.env.BOTLYTICS_URL}?token=${process.env.BOTLYTICS_TOKEN}`;
 
 module.exports = {
-  logIncoming: _.curry(log)('incoming'),
-  logOutgoing: _.curry(log)('outgoing')
+  logIncoming: _.curry(logMessage)('incoming'),
+  logOutgoing: _.curry(logMessage)('outgoing')
 };
 
-function log(kind, conversation_identifier, text) {
-  return new Promise((resolve, reject) => {
-    const options = {
-      'method': 'POST',
-      'hostname': 'www.botlytics.co',
-      'port': null,
-      'path': `/api/v1/messages?token=${process.env.BOTLYTICS_TOKEN}`,
-      'headers': {}
-    };
-    const message = {kind, conversation_identifier, text};
-
-    const req = http.request(options, res => {
-      const chunks = [];
-      res.on('error', reject);
-      res.on('data', chunks.push);
-      res.on('end', resolve.bind(this, Buffer.concat(chunks).toString()));
-    });
-
-    req.write(JSON.stringify({message}));
-    req.end();
+function logMessage(kind, conversation_identifier, text) {
+  if (!text) {
+    return new Promise(resolve => resolve());
+  }
+  return request({
+    method: 'POST',
+    uri: writeEndpoint,
+    json: true,
+    body: {message: {kind, conversation_identifier, text}}
   });
 }
